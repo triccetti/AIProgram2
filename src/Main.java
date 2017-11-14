@@ -8,9 +8,9 @@ public class Main {
         Scanner input = new Scanner(System.in);
 
         PentagoGame game = new PentagoGame();
-        game.setPlayer(1, new Player("Taylor", 'B'));
-        game.setPlayer(2, new AiPlayer("AI", 'W', 2, true));
-        AiPlayer ai = (AiPlayer) game.getPlayer(2);
+        game.setPlayer(new Player("Taylor", 'B'));
+        game.setAiPlayer(new AiPlayer("AI", 'W', 2, true));
+        AiPlayer ai = (AiPlayer) game.getAiPlayer();
 
         while(!game.gameOver()) {
             System.out.println(game);
@@ -42,12 +42,16 @@ public class Main {
             boolean left = input.nextBoolean();
 
             move = new Move(row, col, board, left);
-            game.rotateBoard(move);
-            game.turnOver(game.whosTurn());
+            game.rotateBoard(game.whosTurn(), move);
+            game.turnOver();
         }
-
-        System.out.println(game);
-        System.out.println("Player" + game.winner() + " has won!");
-        System.out.println("Congratulations " + game.getPlayer(game.winner()) + " has won!");
+        Player result = game.winner();
+        if(result != null) {
+            if (result.getName().equals("Tie")) {
+                System.out.println("Game over! There was a tie!");
+            } else {
+                System.out.println("Congratulations " + game.winner() + " has won!");
+            }
+        }
     }
 }

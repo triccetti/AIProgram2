@@ -1,172 +1,289 @@
 package model;
 
 import java.util.ArrayList;
-import java.util.PriorityQueue;
 import java.util.Random;
-import java.util.Scanner;
 
 public class PentagoGame {
 
     private PentagoBoard board;
-    private Player player1;
-    private Player player2;
+    private Player humanPlayer;
+    private Player aiPlayer;
     private boolean hasPlacedPiece;
     private boolean hasRotatedBoard;
-    private int turn;
+    private Player turn; // the player whos turn it is.
+    private Player firstPlayer; // the first player
+    private Player secondPlayer; // the first player
+
     private Move lastMove;
-    private int aiPlayer;
 
-    // Onces the player who goes first is set this cannot change.
-    private static int playsFirst;
-
+    /**
+     * Constructs a pentago game with a new board.
+     */
     public PentagoGame() {
         // Default size = 3.
         board = new PentagoBoard();
-        playsFirst = 1;
-        turn = playsFirst - 1;
         lastMove = null;
         hasPlacedPiece = false;
         hasRotatedBoard = true;
-        aiPlayer = 0;
     }
 
+    /**
+     * Creates a pentagoGame with the initial state of the
+     * other game.
+     * @param other the other PentagoGame.
+     */
     public PentagoGame(PentagoGame other) {
         // Default size = 3.
         board = new PentagoBoard(other.board);
-        playsFirst = other.playsFirst;
+        humanPlayer = other.humanPlayer;
+        aiPlayer = other.aiPlayer;
+        firstPlayer = other.firstPlayer;
+        secondPlayer = other.secondPlayer;
         turn = other.turn;
-        player1 = other.player1;
-        player2 = other.player2;
         lastMove = other.lastMove;
         hasPlacedPiece = other.hasPlacedPiece;
         hasRotatedBoard = other.hasRotatedBoard;
         aiPlayer = other.aiPlayer;
     }
 
-    public void setPlayer(int p, Player player) {
-        if(p > 2 || p < 1) {
-            throw new IllegalArgumentException("Player " + p + " does not exist. This is a 2 player game.");
+    /**
+     * Sets the Human player to the given player.
+     * @param player the new human player.
+     */
+    public void setPlayer(Player player) {
+        if(humanPlayer != null) {
+            throw new IllegalArgumentException("The player has already been set to "
+                    + humanPlayer.getName() + " with the game piece " + humanPlayer.getPiece());
         }
-        if (p == 1) {
-            player1 = player;
-        } else {
-            player2 = player;
+        if(player == null) {
+            throw new IllegalArgumentException("Player cannot be null.");
         }
+        humanPlayer = player;
     }
 
-    public Player getPlayer(int p) {
-        if(p == 1) {
-            return player1;
+    /**
+     * Sets the ai player to the player passed in.
+     * @param player the ai player.
+     */
+    public void setAiPlayer(Player player) {
+        if(aiPlayer != null) {
+            throw new IllegalArgumentException("The player has already been set to "
+                    + aiPlayer.getName() + " with the game piece " + aiPlayer.getPiece());
+        }
+        if(player == null) {
+            throw new IllegalArgumentException("Player cannot be null.");
+        }
+        aiPlayer = player;
+    }
+
+    /**
+     * Returns the human player.
+     * @return the player moves are being decided by a person.
+     */
+    public Player getPlayer() {
+        return humanPlayer;
+    }
+
+    /**
+     * Returns the ai player.
+     * @return the player moves are being decided by a computer.
+     */
+    public Player getAiPlayer() {
+        return aiPlayer;
+    }
+
+    /**
+     * Returns the player who was chosen to go first.
+     * @return the first player.
+     */
+    public Player getFirstPlayer() {
+        return firstPlayer;
+    }
+
+    /**
+     * Returns the player who goes second.
+     * @return the second player.
+     */
+    public Player getSecondPlayer() {
+        return secondPlayer;
+    }
+
+    /**
+     * Takes in who goest first and sets the turn to the firstPlayer.
+     * @param playerToGoFirst the first player
+     */
+    public void setWhoGoesFirst(Player playerToGoFirst) {
+        if(playerToGoFirst.equals(humanPlayer)) {
+            firstPlayer = humanPlayer;
+            secondPlayer = aiPlayer;
         } else {
-            return player2;
+            firstPlayer = aiPlayer;
+            secondPlayer = humanPlayer;
+        }
+        turn = firstPlayer;
+    }
+
+    /**
+     * 'Flips a coin' to decide who goes first.
+     */
+    public void setWhoGoesFirstRandom() {
+        Random ran = new Random();
+        int i = ran.nextInt(2) + 1;
+        if(i == 1) {
+            setWhoGoesFirst(humanPlayer);
+        } else {
+            setWhoGoesFirst(aiPlayer);
         }
     }
 
     /**
-     * Should only return 1 or 2 anything else is an error.
+     * Returns the player who was chosen to go first.
+     * @return the player who gets to go first.
+     */
+    public Player whoGoesFirst() {
+        return firstPlayer;
+    }
+
+    /**
+     * Returns the player whos turn it is.
+     * @return the player to make a move.
+     */
+    public Player whosTurn() {
+        return turn;
+    }
+
+    /**
+     * True if the char piece at the given location is '.' signifying an
+     * empty space. False otherwise, there is a players piece
+     * @param move
      * @return
      */
-    public int whoGoesFirst() {
-        return playsFirst;
-    }
-
-    public int whosTurn() {
-        if(turn % 2 == 0) {
-            // Player 1's turn
-            return 1;
+    public boolean validMove(Player playerToMakeMove, Move move) {
+        if(playerToMakeMove.equals(whosTurn())) {
+            // the player can make the move!
+            // is the move valid
+            char atMoveLocation = board.getCharAtLocation(move.getRow(), move.getCol());
+            return atMoveLocation == '.';
         } else {
-            // Players 2's turn
-            return 2;
+            return false;
         }
     }
 
-    public boolean validMove(int player, Move move) {
-        char atMoveLocation = board.getCharAtLocation(move.getRow(), move.getCol());
-        return atMoveLocation == '.';
-    }
-
-    public void playPiece(int player, Move move) {
-        if(whosTurn() != player || !validMove(player, move)) {
-            throw new IllegalArgumentException("DON'T CHEAT! That is an invalid move for this turn turn. ");
+    /**
+     * Plays a piece at the given row and col in the move.
+     * With the given players piece.
+     * @param player the player with a game piece.
+     * @param move the move to place the piece on the board.
+     */
+    public void playPiece(Player player, Move move) {
+        // if whos turn it is does not equal the player to make a move...
+        if(!validMove(player, move)) {
+            throw new IllegalArgumentException("DON'T CHEAT! That is an invalid move for this turn. ");
         }
-        board.placePiece(getCurrentPlayerPiece(), move.getRow(), move.getCol());
+        board.placePiece(turn.getPiece(), move.getRow(), move.getCol());
         lastMove = move;
         hasPlacedPiece = true;
         hasRotatedBoard = false;
     }
 
-    public char getCurrentPlayerPiece() {
-        char piecePlacing;
-        if(whosTurn() == 1) {
-            piecePlacing = player1.getPiece();
-        } else {
-            piecePlacing = player2.getPiece();
-        }
-        return piecePlacing;
-    }
-
+    /**
+     * If the user has played a piece or not.
+     * @return  if the user played a piece.
+     */
     public boolean hasPlacedPiece() {
         return hasPlacedPiece;
     }
 
+    /**
+     * If the player has already rotate this board or not in the given turn.
+     * @return true if a board has been rotated, false otherwise.
+     */
     public boolean hasRotatedBoard() {
         return hasRotatedBoard;
     }
 
-    public void setAiPlayer(int p) {
-        aiPlayer = p;
-    }
-
+    /**
+     * Returns true if the its the Ai's turn.
+     * @return if the ai is up.
+     */
     public boolean isAiTurn() {
         return whosTurn() == aiPlayer;
     }
-    public void rotateBoard(Move move) {
+
+    /**
+     * Rotates the move according to the given move.
+     * @param move the move containing how to move the board.
+     */
+    public void rotateBoard(Player makingMover, Move move) {
+        turnOver();
         board.rotateBoard(move.getBoard(), move.isRotateLeft());
         lastMove = move;
         hasRotatedBoard = true;
     }
 
-    public void turnOver(int player) {
-        if(player > 2 || player < 1) {
-            throw new IllegalArgumentException("Player" + player + " does not exist. This is a 2 player game.");
-        }
-        if(!hasPlacedPiece && !hasRotatedBoard) {
-            throw new IllegalArgumentException("You must play a piece and rotate a board");
+    /**
+     * After the player has placed a piece and the board has been
+     * rotated turnOver should be called to set it to the next turn.
+     */
+    public void turnOver() {
+        if(firstPlayer == whosTurn()) {
+            turn = secondPlayer;
+        } else {
+            turn = firstPlayer;
         }
         hasPlacedPiece = false;
-        hasRotatedBoard = true;
-        turn++;
+        hasRotatedBoard = false;
     }
 
+    /**
+     * Returns the last move made on this board.
+     * @return the last move.
+     */
     public Move getLastMove() {
         return lastMove;
     }
 
+    /**
+     * Returns true if the game is over, false otherwise
+     * @return if the game is over or not.
+     */
     public boolean gameOver() {
-        return board.fiveInARow('B') || board.fiveInARow('W');
+        return winner() != null;
     }
 
-    public char winner() {
-        char result;
-        boolean bResult = board.fiveInARow('B');
-        boolean wResult = board.fiveInARow('W');
-        if(bResult && wResult) {
-            result = 'T';
-        } else if (bResult && !wResult) {
-            result = 'B';
-        } else if (!bResult && wResult) {
-            result = 'W';
-        } else {
-            // no one has won yet.
-            result = 0;
+    /**
+     * Returns the winning player, if Player.getName == tie, a
+     * tie occured. If the player is null no one has won yet.
+     *
+     * @return a player.
+     */
+    public Player winner() {
+        Player result = null;
+        boolean humanResult = board.fiveInARow(humanPlayer.getPiece());
+        boolean player2Result = board.fiveInARow(aiPlayer.getPiece());
+        if(humanResult && player2Result) {
+            result = new Player("Tie", 'T');
+        } else if (humanResult && !player2Result) {
+            result = humanPlayer;
+        } else if (!humanResult && player2Result) {
+            result = aiPlayer;
         }
         return result;
     }
 
+    /**
+     * Returns the pentago board object of the game.
+     * @return the board.
+     */
     public PentagoBoard getPentagoBoard() {
         return board;
     }
 
+    /**
+     * Calculates the next board state after the given move is made.
+     * @param nextMove the next move
+     * @return the utility of the new board after the move.
+     */
     public int calulateUtility(Move nextMove) {
         PentagoBoard nextBoard = nextMove.getState().getPentagoBoard();
         return getUtility(nextBoard);
@@ -179,41 +296,30 @@ public class PentagoGame {
      * @param board the board to calculatte
      */
     public int getUtility(PentagoBoard board) {
-        char myPiece;
-        char otherPiece;
-        if(whosTurn() == 1) {
-            myPiece = getPlayer(1).getPiece();
-            otherPiece = getPlayer(2).getPiece();
-        } else {
-            myPiece = getPlayer(2).getPiece();
-            otherPiece = getPlayer(1).getPiece();
-        }
-        int utility;
-
-        boolean won = board.fiveInARow(myPiece);
-        boolean lost = board.fiveInARow(otherPiece);
+        char humanPiece = humanPlayer.getPiece();
+        char aiPiece = aiPlayer.getPiece();
+        int utility = 0;
+        boolean won = board.fiveInARow(humanPiece);
+        boolean lost = board.fiveInARow(aiPiece);
 
         if(won) {
             utility = 100;
         } else if (lost) {
             utility = -100;
         } else {
-
-            int twoInARows = board.inARows(2, myPiece);
-            int twoInARowsOpponent = board.inARows(2, otherPiece);
-
-            int threeInARows = board.inARows(3, myPiece);
-            int threeInARowsOpponent = board.inARows(3, otherPiece);
-
-            int fourInARows = board.inARows(4, myPiece);
-            int fourInARowsOpponent = board.inARows(4, otherPiece);
-            utility = (twoInARows - twoInARowsOpponent)
-                    + (threeInARows - threeInARowsOpponent)
-                    + (fourInARows - fourInARowsOpponent);
+            for(int i = 2; i < 5; i++) {
+                int inARows = board.inARows(2, humanPiece);
+                int inARowsAi = board.inARows(2, aiPiece);
+                utility += (inARows - inARowsAi);
+            }
         }
         return utility;
     }
 
+    /**
+     * Checks all possible child states of the current game state.
+     * @return An arrayList of pentagoGame states.
+     */
     public ArrayList<PentagoGame> nextPossibleMoves() {
         ArrayList<PentagoGame> children = new ArrayList<>();
         for(int i = 0; i < 6; i++) { // for each row I can place a piece
@@ -228,8 +334,8 @@ public class PentagoGame {
                         if(validMove(whosTurn(), move)) {
                             PentagoGame tempGame = new PentagoGame(this);
                             tempGame.playPiece(whosTurn(), move);
-                            tempGame.rotateBoard(move);
-                            tempGame.turnOver(whosTurn());
+                            tempGame.rotateBoard(whosTurn(), move);
+                            tempGame.turnOver();
                             move.setGameState(tempGame);
                             move.setUtility(calulateUtility(move));
                             // todo
@@ -249,17 +355,13 @@ public class PentagoGame {
         state.append("*====* Pentago Game State *====*\n");
         state.append("Players:\n");
         state.append("  Player 1: ");
-        state.append(player1);
+        state.append(getFirstPlayer());
         state.append("\n  Player 2: ");
-        state.append(player2);
+        state.append(getSecondPlayer());
 
-        state.append("\nPlayer");
-        state.append(playsFirst);
-        state.append(" goes first.\n");
-
-        state.append("Its Player");
-        state.append(whosTurn());
-        state.append("'s turn.\n");
+        state.append("\n\nIts Player ");
+        state.append(whosTurn().getName());
+        state.append("'s turn.\n\n");
 
         state.append("Board:\n");
         state.append(board);

@@ -2,6 +2,7 @@ package view;
 
 import javafx.event.EventHandler;
 import javafx.event.EventType;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -15,17 +16,17 @@ import model.PentagoGame;
 import model.Player;
 
 
-public class PentagoBoardTile extends FlowPane {
+public class PentagoBoardTile extends TilePane {
 
     /** The the pieces size. */
-    private static final int PIECE_SIZE = 80;
+    public static final int PIECE_SIZE = 80;
 
     private char piece;
     private ImageView tile;
     private int row;
     private int col;
 
-    public PentagoBoardTile(PentagoGame game, char piece, int row, int col) {
+    public PentagoBoardTile(char piece, int row, int col) {
         super();
         setHeight(PIECE_SIZE);
         setWidth(PIECE_SIZE);
@@ -35,49 +36,29 @@ public class PentagoBoardTile extends FlowPane {
         this.col = col;
         tile = getIcon(piece);
         getChildren().add(tile);
-        setUp(game);
-    }
-
-    private void setUp(PentagoGame game) {
-        setOnMouseEntered(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                if(game.hasRotatedBoard()) {
-                    tile = getHoverIcon(piece);
-                    refresh();
-                }
-            }
-        });
-
-        setOnMouseExited(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                if(game.hasRotatedBoard()) {
-                    tile = getIcon(piece);
-                    refresh();
-                }
-            }
-        });
-
-        setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                if(!game.isAiTurn()) {
-                    Player curr = game.getPlayer(game.whosTurn());
-                    try {
-                        game.playPiece(game.whosTurn(), new Move(row, col, 0, false));
-                    } catch (IllegalArgumentException e) {
-                        BorderPane pane = (BorderPane) getParent();
-                        pane.setLeft(new Text("Invalid Move!"));
-                    }
-                    tile = getIcon(curr.getPiece());
-                    setPiece(curr.getPiece());
-                }
-            }
-        });
+        setRegularIcon();
     }
 
     public void setPiece(char piece) {
+        this.piece = piece;
+        tile = getIcon(piece);
+        refresh();
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
+    }
+
+    public void setHoverIcon() {
+        tile = getHoverIcon(piece);
+        refresh();
+    }
+
+    public void setRegularIcon() {
         tile = getIcon(piece);
         refresh();
     }

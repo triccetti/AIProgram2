@@ -38,7 +38,7 @@ public class PentagoMain extends Application {
     private final TitledPane mainPane = new TitledPane();
 
     /** The the pieces size. */
-    private static final int        PIECE_SIZE = 80;
+    private static final int PIECE_SIZE = 80;
 
 
     private ArrayList<FlowPane> quads;
